@@ -6,7 +6,7 @@ import numpy as np
 gutenbergHeaderExp = re.compile(r'[\n]\*\*\* (?:START|END) OF THE [^*]+\*\*\*[\n]')
 spacesExp = re.compile(r'\s+')
 paragraphBreakExp = re.compile(r'[\n]{2,}')
-unsupportedCharactersExp = re.compile(r'[^a-z0-9ùúûüÿàâæçéèêëïîôœ \t\n!.,?_/\-\']', re.IGNORECASE)
+unsupportedCharactersExp = re.compile(r'[^a-z0-9ùúûüÿàâæçéèêëïîôœ \t\n!.,?/\-\']', re.IGNORECASE)
 punctuationExp = re.compile(r'[!.,"?_/\-\']')
 
 def preprocess_text(text: str)->str:
