@@ -6,8 +6,8 @@ import numpy as np
 gutenbergHeaderExp = re.compile(r'[\n]\*\*\* (?:START|END) OF THE [^*]+\*\*\*[\n]')
 spacesExp = re.compile(r'\s+')
 paragraphBreakExp = re.compile(r'[\n]{2,}')
-unsupportedCharactersExp = re.compile(r'[^a-z0-9ùúûüÿàâæçéèêëïîôœ \t\n!.,?_/-]', re.IGNORECASE)
-punctuationExp = re.compile(r'[!.,"?_/-]')
+unsupportedCharactersExp = re.compile(r'[^a-z0-9ùúûüÿàâæçéèêëïîôœ \t\n!.,?_/\-\']', re.IGNORECASE)
+punctuationExp = re.compile(r'[!.,"?_/\-\']')
 
 def preprocess_text(text: str)->str:
     # Remove metadata
@@ -22,7 +22,7 @@ def preprocess_text(text: str)->str:
     text = text.replace('»', '"')
     # Some books use -- at the start of a line to start quotes (e.g. "Le Comte De Monte Cristo")
     text = text.replace('\n--', '\n"')
-    text = unsupportedCharactersExp.sub('', text)
+    text = unsupportedCharactersExp.sub(' ', text)
     text = paragraphBreakExp.sub(' [PAR] ', text)
     text = text.replace('\n', ' ')
     text = spacesExp.sub(' ', text)
