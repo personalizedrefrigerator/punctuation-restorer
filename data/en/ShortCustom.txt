@@ -1,0 +1,43 @@
+This document's goal is to provide a small amount of additional data for fine-tuning the model.
+
+Rationale: The majority of the model's data is from the 1800s and early 1900s. As such, the
+lexicon and grammar employed by the model are somewhat archaic (to-do: find an archaic synonym
+for "somewhat").
+
+For example, the model should be able to employ the term "Joplin" in various forms. E.g. by reading
+"Joplin's GUI differs significantly between its React Native Android app and its Windows app" and
+inserting punctuation appropriately.
+
+Unfortunately, this file is likely to have little or no effect: It's very short compared to the other
+documents in the training corpus, it only mentions the relevant terms a few times, and may occasionally
+be included in the validation set, rather than the training set.
+
+Here's the main text of the document:
+
+Joplin is a note-taking and to-do application that supports Windows, Linux, iOS, Android, web, and other platforms.
+Its iOS, Android, and web platforms were written using React Native. Its Windows, Linux, and MacOS apps
+use Electron.
+
+Electron is an interesting word. Usually, it's lowercase (e.g. "electron"). However, in some cases, it
+should be uppercase (e.g. "Electron"). I'm curious - will the model be intelligent enough to recognize,
+from context, which "electron" is being referred to?
+
+I'm also curious how well the model will handle question punctuation. Will it be different in English and
+French? The same? It's hard to say.
+
+Here are a few sample questions:
+
+Why is this program not working?
+
+I am testing this application. Does it work?
+
+What about names? Are names capitalized correctly? These are names: Bob, Canada, Greenland, Eve, Edward, Alice,
+and Jabberwocky. Does it convert them correctly?
+
+How about conjunctions? Ain't, hain't, haven't, he'll, she'll, they'll, and it's. "It's" in particular will
+be tricky.
+
+Abbreviations? Here are some: CPU, TPU, USA, EU, IRS, SEC, JS, TS, RNN (for Recurrent Neural Network).
+
+I'm curious whether any modern texts could be incorporated. Doing so could improve the model's accuracy on the
+actual text provided by users.

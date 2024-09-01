@@ -7,8 +7,8 @@ from enum import Enum
 gutenbergHeaderExp = re.compile(r'[\n]\*\*\* (?:START|END) OF THE [^*]+\*\*\*[\n]')
 spacesExp = re.compile(r'\s+')
 paragraphBreakExp = re.compile(r'[\n]{2,}')
-unsupportedCharactersExp = re.compile(r'[^a-z0-9ùúûüÿàâæçéèêëïîôœ \t\n!.,?/\-\']', re.IGNORECASE)
-punctuationExp = re.compile(r'[!.,"?_/\-\']')
+unsupportedCharactersExp = re.compile(r'[^a-z0-9ùúûüÿàâæçéèêëïîôœ \t\n!.,?/\-\':;]', re.IGNORECASE)
+punctuationExp = re.compile(r'[!.,"?_/\-\':;]')
 
 def preprocess_text(text: str)->str:
     # Remove metadata
@@ -36,10 +36,8 @@ def remove_punctuation_and_lowercase(text: str)->str:
     # Remove repeated spaces caused by the removal of punctuation
     return spacesExp.sub(' ', text)
 
-class Operation(Enum):
-    Copy = 0
-    Capitalize = 1
-    InsertAndAdvance = 2
+OPERATION_COPY = '1'
+OPERATION_CAPITALIZE = '2'
 
 def create_labels(original: str, normalized: str):
     output = []
@@ -50,11 +48,11 @@ def create_labels(original: str, normalized: str):
         c1 = normalized[i]
         c2 = original[j]
         if c1 == c2:
-            output.append([ Operation.Copy, 'x' ])
+            output.append(OPERATION_COPY)
             i += 1
             j += 1
         elif c1 == c2.lower():
-            output.append([ Operation.Capitalize, 'x' ])
+            output.append(OPERATION_CAPITALIZE)
             i += 1
             j += 1
         else:
@@ -63,38 +61,32 @@ def create_labels(original: str, normalized: str):
                 to_insert += c2
                 j += 1
                 c2 = original[j]
-            output.append([ Operation.InsertAndAdvance, to_insert[0] ])
+            output.append(to_insert[0])
             i += 1
             j += 1
-    
-    def to_np(entry):
-        operation, character = entry
-        assert len(character) == 1
-        return np.array([ operation.value, character ])
 
-    return np.array(list(map(to_np, output)))
+    return np.array(output)
 
 def reconstruct_from_labels(normalized: str, labels):
-    num_operations, _ = labels.shape
+    num_operations, = labels.shape
     result = []
 
     for i in range(num_operations):
-        operation = Operation(int(labels[i, 0]))
-        arg = labels[i, 1]
+        operation = labels[i]
         char = normalized[i]
 
-        if type (arg) == bytes:
-            arg = arg.decode('utf-8')
+        if type (operation) == bytes:
+            operation = operation.decode('utf-8')
+        if type (char) == bytes:
+            char = char.decode('utf-8')
 
-        if operation == Operation.Copy:
+        if operation == OPERATION_COPY:
             result.append(char)
-        elif operation == Operation.Capitalize:
+        elif operation == OPERATION_CAPITALIZE:
             result.append(str(char).upper())
-        elif operation == Operation.InsertAndAdvance:
-            result.append(arg)
-            result.append(char)
         else:
-            print('Unknown operation', operation)
+            result.append(operation)
+            result.append(char)
     
     return ''.join(result)
 
@@ -117,8 +109,7 @@ def load_file_data(dataPath: pathlib.Path):
         source.extend(normalized)
 
         labels = create_labels(paragraph, normalized)
-        assert labels.shape[1] == 2
-        assert labels.shape[0] == len(normalized)
+        assert labels.shape == (len(normalized),)
         dest.extend(labels)
 
     assert len(source) == len(dest)
@@ -151,19 +142,15 @@ assert preprocess_text('Test thing?\n\nTest...\n\n\n\nTEST.') == 'Test thing? [P
 assert preprocess_text('Test\n*** START OF THE TEST BOOK ***\n\nTest\n\n*** END OF THE TEST BOOK ***\n\n End') == 'Test'
 assert remove_punctuation_and_lowercase('Test thing? Test -- ha!') == 'test thing test ha', 'should remove punctuation'
 assert np.array_equal(
-    create_labels('test', 'test'), np.array([[ Operation.Copy.value, 'x' ]] * 4)
+    create_labels('test', 'test'), np.array([OPERATION_COPY] * 4)
 ), 'should create copy labels'
 assert np.array_equal(
     create_labels('Test', 'test'),
-    np.array([[Operation.Capitalize.value, 'x']] + [[ Operation.Copy.value, 'x' ]] * 3)
+    np.array([OPERATION_CAPITALIZE] + [OPERATION_COPY] * 3)
 ), 'should create capitalize labels'
 assert np.array_equal(
     create_labels('.a', 'a'),
-    np.array([[Operation.InsertAndAdvance.value, '.']])
-), 'should create a simple insert label'
-assert np.array_equal(
-    create_labels('.a', 'a'),
-    np.array([[Operation.InsertAndAdvance.value, '.']])
+    np.array(['.'])
 ), 'should create a simple insert label'
 
 def test_reconstruction(original: str, reconstructs_to: str):
