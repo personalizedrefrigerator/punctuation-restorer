@@ -4,11 +4,11 @@ import numpy as np
 from enum import Enum
 
 # Matches the Project Gutenberg (TM) book start/end headers.
-gutenbergHeaderExp = re.compile(r'[\n]\*\*\* (?:START|END) OF THE [^*]+\*\*\*[\n]')
+gutenbergHeaderExp = re.compile(r'[\n]+\*\*\* (?:START|END) OF THE [^*]+\*\*\*[\n]+')
 spacesExp = re.compile(r'\s+')
 paragraphBreakExp = re.compile(r'[\n]{2,}')
-unsupportedCharactersExp = re.compile(r'[^a-z0-9ùúûüÿàâæçéèêëïîôœ \t\n!.,?/\-\':;]', re.IGNORECASE)
-punctuationExp = re.compile(r'[!.,"?_/\-\':;]')
+unsupportedCharactersExp = re.compile(r'[^a-z0-9ùúûüÿàâæçéèêëïîôœ \t\n.,?\-\':]', re.IGNORECASE)
+punctuationExp = re.compile(r'[.,?\-\':]')
 
 def preprocess_text(text: str)->str:
     # Remove metadata
@@ -90,8 +90,8 @@ def reconstruct_from_labels(normalized: str, labels):
     
     return ''.join(result)
 
-def load_file_data(dataPath: pathlib.Path):
-    text = preprocess_text(dataPath.read_text('utf-8'))
+def load_file_data(dataPath: pathlib.Path, labelMode: int = 1):
+    text = preprocess_text(dataPath.read_text('utf-8').strip())
     paragraphs = text.split(' [PAR] ')
     source = []
     dest = []
@@ -108,22 +108,27 @@ def load_file_data(dataPath: pathlib.Path):
 
         source.extend(normalized)
 
-        labels = create_labels(paragraph, normalized)
-        assert labels.shape == (len(normalized),)
-        dest.extend(labels)
+        if labelMode == 1: # For the v1 notebook
+            labels = create_labels(paragraph, normalized)
+            assert labels.shape == (len(normalized),)
+            dest.extend(labels)
+        elif labelMode == 2: # For the v2 notebook
+            dest.extend(paragraph)
 
-    assert len(source) == len(dest)
-
+    if labelMode == 1:
+        assert len(source) == len(dest)
+    elif labelMode == 2:
+        assert len(dest) > len(source) and len(source) > 0
     return source, dest # y, x
 
-def load_data(dirPath: str):
+def load_data(dirPath: str, labelMode: int = 1):
     path = pathlib.Path(dirPath)
     source, dest = [], []
 
     for path in path.iterdir():
         if not path.is_file() or not path.as_posix().endswith('.txt'):
             continue
-        src, dst = load_file_data(path)
+        src, dst = load_file_data(path, labelMode)
         source.extend(src)
         dest.extend(dst)
     
@@ -140,7 +145,7 @@ assert preprocess_text('Test thing?') == 'Test thing?', 'should preserve punctua
 assert preprocess_text('Test thing?\nTest...\nTest.') == 'Test thing? Test... Test.', 'should replace newlines'
 assert preprocess_text('Test thing?\n\nTest...\n\n\n\nTEST.') == 'Test thing? [PAR] Test... [PAR] TEST.', 'should replace double newlines'
 assert preprocess_text('Test\n*** START OF THE TEST BOOK ***\n\nTest\n\n*** END OF THE TEST BOOK ***\n\n End') == 'Test'
-assert remove_punctuation_and_lowercase('Test thing? Test -- ha!') == 'test thing test ha', 'should remove punctuation'
+assert remove_punctuation_and_lowercase('Test thing? Test -- ha.') == 'test thing test ha', 'should remove punctuation'
 assert np.array_equal(
     create_labels('test', 'test'), np.array([OPERATION_COPY] * 4)
 ), 'should create copy labels'

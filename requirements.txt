@@ -1,0 +1,4 @@
+einops
+tensorflow
+tensorflow-text
+matplotlib
