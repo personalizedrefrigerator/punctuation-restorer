@@ -48,3 +48,8 @@ even included in the list of the 10,000 most common words! I expect "hello" to b
 I've repeated "hello" a few times here, so it is likely to now be included in the vocabulary. However, there may well be
 similar words that don't appear frequently in the corpus. As such, while designing the model, we should be sure that
 unknown words (like "hello") are preserved.
+
+It would also be nice if "Joplin" was common enough to be included in the model's vocabulary. This would help ensure that the
+model knows to properly capitalize it. I'm listing "Joplin" several times here as part of an effort to make this happen:
+Joplin Desktop, Joplin Mobile, Joplin CLI, Joplin Web, Joplin's documentation, Joplin notebook, Joplin note, Joplin's editor, Joplin,
+and Joplin.

@@ -1,6 +1,38 @@
 from collections.abc import Callable
 from pathlib import Path
-import os
+import os, re
+
+spaces_exp = re.compile(r'\s+')
+def word_count(text: str):
+	return len(spaces_exp.split(text))
+
+def split_long_paragraphs(text: str):
+	paragraphs = text.split('\n')
+	result = []
+
+	for paragraph in paragraphs:
+		max_paragraph_length = 64
+		if word_count(paragraph) > max_paragraph_length:
+			sentences = paragraph.split('. ')
+			prev_sentence = None
+			for sentence in sentences:
+				if len(sentence.strip()) == 0:
+					continue
+				if not sentence.endswith(('.', '?', ':')):
+					sentence += '. '
+
+				if prev_sentence and word_count(sentence) + word_count(prev_sentence) < max_paragraph_length:
+					result.pop()
+					result.append(prev_sentence + sentence)
+				else:
+					words = sentence.split(' ')
+					for i in range(0, len(words), max_paragraph_length):
+						current = ' '.join(words[i:i+max_paragraph_length])
+						result.append(current)
+						prev_sentence = current
+		else:
+			result.append(paragraph)
+	return result
 
 def process_data(normalize: Callable[[str, str], str])->None:
 	"""
@@ -38,7 +70,7 @@ def process_data(normalize: Callable[[str, str], str])->None:
 			target_path = processed_data_path / rel_path
 			assert not target_path.exists()
 
-			processed = normalize(file_path.read_text('utf-8'), '\n')
+			processed = '\n'.join(split_long_paragraphs(normalize(file_path.read_text('utf-8'), '\n')))
 			target_path.write_text(processed, 'utf-8')
 
 		for name in dirs:

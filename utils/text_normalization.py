@@ -4,8 +4,9 @@ import re
 gutenbergHeaderExp = re.compile(r'[\n]+\*\*\* (?:START|END) OF THE [^*]+\*\*\*[\n]+')
 spacesExp = re.compile(r'\s+')
 paragraphBreakExp = re.compile(r'[\n]{2,}')
-unsupportedCharactersExp = re.compile(r'[^a-z0-9ùúûüÿàâæçéèêëïîôœ \t\n.,?!"\-\':]', re.IGNORECASE)
-punctuationExp = re.compile(r'[.,?!"\-\':]')
+repeatedDashExp = re.compile(r'[-]{2,}')
+unsupportedCharactersExp = re.compile(r'[^a-z0-9ùúûüÿàâæçéèêëïîôœ \t\n.,?!\-\':]', re.IGNORECASE)
+punctuationExp = re.compile(r'[.,?!\-\':]')
 
 def normalize_text(text: str, par_separator: str = ' [PAR] ')->str:
     """
@@ -25,6 +26,7 @@ def normalize_text(text: str, par_separator: str = ' [PAR] ')->str:
     # Some books use -- at the start of a line to start quotes (e.g. "Le Comte De Monte Cristo")
     text = text.replace('\n--', '\n"')
     text = unsupportedCharactersExp.sub(' ', text)
+    text = repeatedDashExp.sub('--', text)
     
 	# Handle newlines and paragraphs
     par_temp_replacement = '[PARAGRAPH BREAK]'
