@@ -2,3 +2,7 @@
 env/
 *.swp
 *.pyc
+__pycache__/
+
+# Postprocessed data files
+data/processed/*
