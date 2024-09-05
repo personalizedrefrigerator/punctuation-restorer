@@ -11,7 +11,7 @@ def split_long_paragraphs(text: str):
 	result = []
 
 	for paragraph in paragraphs:
-		max_paragraph_length = 64
+		max_paragraph_length = 50
 		if word_count(paragraph) > max_paragraph_length:
 			sentences = paragraph.split('. ')
 			prev_sentence = None

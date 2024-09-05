@@ -1,0 +1,19 @@
+{
+  "name": "@personalizedrefrigerator/punctuator-web-demo",
+  "version": "0.0.1",
+  "description": "Demonstrates the work-in-progress punctuator",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "copy-webpack-plugin": "^12.0.2",
+    "onnxruntime-web": "^1.19.2",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.5.4",
+    "webpack": "^5.94.0"
+  }
+}

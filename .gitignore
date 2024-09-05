@@ -5,5 +5,10 @@ env/
 *.pyc
 __pycache__/
 
+punctuator-seq2seq/
+
+node_modules/
+web/dist/*
+
 # Postprocessed data files
 data/processed/*
