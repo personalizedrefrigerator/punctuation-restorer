@@ -11,7 +11,7 @@ for (const [id, word] of Object.entries(wordEncodings)) {
 	idToWord.set(Number(id), word);
 }
 
-const encodeText = (text: string) => {
+const encodeText = (text: string): [TypedTensor<'int64'>, string[]] => {
 	text = text
 		.replace(unsupportedCharactersExp, ' ')
 		.replace(punctuationExp, ' $0 ')
@@ -25,31 +25,44 @@ const encodeText = (text: string) => {
 		throw new Error('Missing [UNK] token!');
 	}
 
+	const unknowns: string[] = [];
+
 	const wordInts = wordStrings.map((word): number => {
 		const wordId = wordToId.get(word);
 		if (wordId !== undefined) {
 			return wordId;
 		} else {
+			unknowns.push(word);
 			return unknownToken;
 		}
 	});
-	return new Tensor('int64', wordInts);
+	return [
+		new Tensor('int64', wordInts),
+		unknowns,
+	];
 };
 
-const decodeText = async (tensor: TypedTensor<'int64'>) => {
+// unknowns: Maps from the index of an [UNK] token to its guessed value.
+const decodeText = async (tensor: TypedTensor<'int64'>, unknowns: string[]) => {
 	const data = await tensor.getData();
 
 	const result: string[] = [];
+	let unknownIndex = 0;
 	for (let i = 0; i < data.length; i++) {
 		const value = Number(data.at(i));
 		const word = idToWord.get(value);
 		if (word === undefined) {
 			throw new Error('Invalid ID: ' + value);
-		} else if (word === '[END]') {
-			break;
+		} else if (word === '[UNK]' && unknownIndex < unknowns.length) {
+			result.push(unknowns[unknownIndex]);
+			unknownIndex ++;
+		} else {
+			result.push(word);
 		}
 
-		result.push(word);
+		if (word === '[END]') {
+			break;
+		}
 	}
 
 	return result
@@ -59,11 +72,42 @@ const decodeText = async (tensor: TypedTensor<'int64'>) => {
 			return capture.toUpperCase();
 		})
 		// Remove extra whitespace before most punctuation tokens
-		.replace(/\s([?.'!])/g, '$1');
+		.replace(/\s([?.!,])/g, '$1')
+		.replace(/\s'\s/g, '\'');
 };
+
+class Punctuator {
+	public constructor(
+		private session: InferenceSession
+	) {}
+
+	public async punctuate(text: string) {
+		// Remove any existing punctation
+		text = text.replace(punctuationExp, ' ').toLowerCase();
+
+		const [ encodedInput, unknowns ] = encodeText(text);
+		const rawResults = await this.session.run({ 'input': encodedInput });
+
+		let result;
+		if ('output_0' in rawResults) {
+			const outputTokens = rawResults['output_0'] as TypedTensor<'int64'>;
+			const decoded = await decodeText(outputTokens, unknowns);
+
+			result = decoded;
+
+			outputTokens.dispose();
+		} else {
+			throw new Error('No output found!');
+		}
+		encodedInput.dispose();
+
+		return result;
+	}
+}
 
 (async () => {
 	const session = await InferenceSession.create('./model.onnx');
+	const punctuator = new Punctuator(session);
 
 	const container = document.createElement('div');
 	const testInput = document.createElement('textarea');
@@ -72,22 +116,7 @@ const decodeText = async (tensor: TypedTensor<'int64'>) => {
 	testButton.textContent = 'Test';
 
 	testButton.onclick = async () => {
-		const encodedInput = encodeText(
-			testInput.value.replace(punctuationExp, ' ').toLowerCase()
-		);
-		const results = await session.run({
-			'input': encodedInput,
-		});
-		if ('output_0' in results) {
-			const output = results['output_0'] as TypedTensor<'int64'>;
-			const decoded = await decodeText(output);
-			alert(decoded);
-			console.log('out:', decoded)
-			output.dispose();
-		} else {
-			alert('No output found!');
-		}
-		encodedInput.dispose();
+		alert(await punctuator.punctuate(testInput.value));
 	};
 
 	container.replaceChildren(testInput, testButton);
