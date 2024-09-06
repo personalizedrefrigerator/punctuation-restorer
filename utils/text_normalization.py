@@ -23,6 +23,7 @@ def normalize_text(text: str, par_separator: str = ' [PAR] ')->str:
     text = text.replace('”', '"')
     text = text.replace('«', '"')
     text = text.replace('»', '"')
+    text = text.replace('—', '--')
     # Some books use -- at the start of a line to start quotes (e.g. "Le Comte De Monte Cristo")
     text = text.replace('\n--', '\n"')
     text = unsupportedCharactersExp.sub(' ', text)

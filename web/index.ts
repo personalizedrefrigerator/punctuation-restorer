@@ -11,13 +11,19 @@ for (const [id, word] of Object.entries(wordEncodings)) {
 	idToWord.set(Number(id), word);
 }
 
-const encodeText = (text: string): [TypedTensor<'int64'>, string[]] => {
+interface EncodingResult {
+	tensor: TypedTensor<'int64'>;
+	unknownWords: string[];
+}
+
+// Converts [text] to a Tensor. 
+const encodeText = (text: string): EncodingResult => {
 	text = text
 		// Compare to standardize_tf_text in v2-seq2seq.ipynb
 		.replace(unsupportedCharactersExp, ' ')
 		.replace(punctuationExp, ' $0 ')
 		.replace(/(\s|^)([A-Z])/g, ' [CAP] $2')
-		.replace(/([a-z]{3,})(ing|ed|er|s)(\s|$)/g, '$1 [$2]$3') // move certain suffixes to separate tokens
+		.replace(/([a-z]{3,})(ing|ed|er|ily|ly|ish|s)(\s|$)/g, '$1 [$2]$3') // move certain suffixes to separate tokens
 		.toLowerCase()
 		.trim();
 
@@ -38,10 +44,10 @@ const encodeText = (text: string): [TypedTensor<'int64'>, string[]] => {
 			return unknownToken;
 		}
 	});
-	return [
-		new Tensor('int64', wordInts),
-		unknowns,
-	];
+	return {
+		tensor: new Tensor('int64', wordInts),
+		unknownWords: unknowns,
+	};
 };
 
 // unknowns: Maps from the index of an [UNK] token to its guessed value.
@@ -70,7 +76,7 @@ const decodeText = async (tensor: TypedTensor<'int64'>, unknowns: string[]) => {
 	return result
 		.join(' ')
 		// Rejoin suffixes
-		.replace(/([a-z])\s\[(ing|s|ed|er)\](\s|$)/g, '$1$2$3')
+		.replace(/([a-z])\s\[(ing|s|ed|er|ily|ly|ish)\](\s|$)/g, '$1$2$3')
 		// Interpret [cap] tokens
 		.replace(/\[cap\]\s(\w)/g, (_, capture) => {
 			return capture.toUpperCase();
@@ -89,14 +95,14 @@ class Punctuator {
 		// Remove any existing punctation
 		text = text.replace(punctuationExp, ' ').toLowerCase();
 
-		const [ encodedInput, unknowns ] = encodeText(text);
-		console.debug('Unknown tokens:', unknowns);
+		const { tensor: encodedInput, unknownWords } = encodeText(text);
+		console.debug('Unknown tokens:', unknownWords);
 		const rawResults = await this.session.run({ 'input': encodedInput });
 
 		let result;
 		if ('output_0' in rawResults) {
 			const outputTokens = rawResults['output_0'] as TypedTensor<'int64'>;
-			const decoded = await decodeText(outputTokens, unknowns);
+			const decoded = await decodeText(outputTokens, unknownWords);
 
 			result = decoded;
 

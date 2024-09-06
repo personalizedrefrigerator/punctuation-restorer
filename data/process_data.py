@@ -36,6 +36,13 @@ def split_long_paragraphs(text: str):
 			result.append(paragraph)
 	return result
 
+chapter_exp = re.compile(r'^.{0,3}(chapter|vol\.|part) [0-9IX]', re.IGNORECASE)
+def filter_chapter_headings(text: list[str]):
+	def is_body_paragraph(paragraph: str):
+		paragraph = paragraph.strip().lower()
+		return not chapter_exp.match(paragraph)
+	return list(filter(is_body_paragraph, text))
+
 def process_data(normalize: Callable[[str, str], str])->None:
 	"""
 		Processes the data present in /data/processed and outputs to /data/raw.
@@ -72,7 +79,11 @@ def process_data(normalize: Callable[[str, str], str])->None:
 			target_path = processed_data_path / rel_path
 			assert not target_path.exists()
 
-			processed = '\n'.join(split_long_paragraphs(normalize(file_path.read_text('utf-8'), '\n')))
+			processed = '\n'.join(
+				filter_chapter_headings(
+					split_long_paragraphs(normalize(file_path.read_text('utf-8'), '\n'))
+				)
+			)
 			target_path.write_text(processed, 'utf-8')
 
 		for name in dirs:
