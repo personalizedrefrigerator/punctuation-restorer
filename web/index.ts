@@ -1,8 +1,8 @@
 import { InferenceSession, Tensor, TypedTensor } from 'onnxruntime-web';
 import wordEncodings from './wordEncodings';
 
-const punctuationExp = /[?.:,\-'!]/g;
-const unsupportedCharactersExp = /[^a-z0-9ùúûüÿàâæçéèêëïîôœ .,?!\-\':]/ig;
+const punctuationExp = /[?.:,\-'!;]/g;
+const unsupportedCharactersExp = /[^a-z0-9ùúûüÿàâæçéèêëïîôœ .,?!\-\':;]/ig;
 
 const wordToId = new Map<string, number>();
 const idToWord = new Map<number, string>();
@@ -13,9 +13,11 @@ for (const [id, word] of Object.entries(wordEncodings)) {
 
 const encodeText = (text: string): [TypedTensor<'int64'>, string[]] => {
 	text = text
+		// Compare to standardize_tf_text in v2-seq2seq.ipynb
 		.replace(unsupportedCharactersExp, ' ')
 		.replace(punctuationExp, ' $0 ')
 		.replace(/(\s|^)([A-Z])/g, ' [CAP] $2')
+		.replace(/([a-z]{3,})(ing|ed|er|s)(\s|$)/g, '$1 [$2]$3') // move certain suffixes to separate tokens
 		.toLowerCase()
 		.trim();
 
@@ -67,6 +69,8 @@ const decodeText = async (tensor: TypedTensor<'int64'>, unknowns: string[]) => {
 
 	return result
 		.join(' ')
+		// Rejoin suffixes
+		.replace(/([a-z])\s\[(ing|s|ed|er)\](\s|$)/g, '$1$2$3')
 		// Interpret [cap] tokens
 		.replace(/\[cap\]\s(\w)/g, (_, capture) => {
 			return capture.toUpperCase();
@@ -86,6 +90,7 @@ class Punctuator {
 		text = text.replace(punctuationExp, ' ').toLowerCase();
 
 		const [ encodedInput, unknowns ] = encodeText(text);
+		console.debug('Unknown tokens:', unknowns);
 		const rawResults = await this.session.run({ 'input': encodedInput });
 
 		let result;

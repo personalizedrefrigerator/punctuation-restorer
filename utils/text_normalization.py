@@ -5,8 +5,8 @@ gutenbergHeaderExp = re.compile(r'[\n]+\*\*\* (?:START|END) OF THE [^*]+\*\*\*[\
 spacesExp = re.compile(r'\s+')
 paragraphBreakExp = re.compile(r'[\n]{2,}')
 repeatedDashExp = re.compile(r'[-]{2,}')
-unsupportedCharactersExp = re.compile(r'[^a-z0-9ùúûüÿàâæçéèêëïîôœ \t\n.,?!\-\':]', re.IGNORECASE)
-punctuationExp = re.compile(r'[.,?!\-\':]')
+unsupportedCharactersExp = re.compile(r'[^a-z0-9ùúûüÿàâæçéèêëïîôœ \t\n.,?!\-\':;]', re.IGNORECASE)
+punctuationExp = re.compile(r'[.,?!\-\':;]')
 
 def normalize_text(text: str, par_separator: str = ' [PAR] ')->str:
     """
