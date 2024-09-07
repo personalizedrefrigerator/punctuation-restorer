@@ -82,7 +82,7 @@ const decodeText = async (tensor: TypedTensor<'int64'>, unknowns: string[]) => {
 			return capture.toUpperCase();
 		})
 		// Remove extra whitespace before most punctuation tokens
-		.replace(/\s([?.!,])/g, '$1')
+		.replace(/\s([?.!,;:])/g, '$1')
 		.replace(/\s'\s/g, '\'');
 };
 
