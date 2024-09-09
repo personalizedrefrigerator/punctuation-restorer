@@ -2,3 +2,5 @@ einops
 tensorflow
 tensorflow-text
 matplotlib
+tensorflow-datasets
+tf2onnx

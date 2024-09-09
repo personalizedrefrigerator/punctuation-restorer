@@ -97,6 +97,8 @@ class Punctuator {
 
 		const { tensor: encodedInput, unknownWords } = encodeText(text);
 		console.debug('Unknown tokens:', unknownWords);
+		console.log('decoded', await decodeText(encodedInput, []));
+		console.log('input', await encodedInput.getData());
 		const rawResults = await this.session.run({ 'input': encodedInput });
 
 		let result;
